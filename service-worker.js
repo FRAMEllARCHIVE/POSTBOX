@@ -10,7 +10,6 @@ const FILES_TO_CACHE = [
   OFFLINE_URL
 ];
 
-// Install the service worker
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -20,7 +19,6 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate the service worker
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -37,7 +35,6 @@ self.addEventListener("activate", (event) => {
   return self.clients.claim();
 });
 
-// Fetch event to serve cached content
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
