@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/512x512.png">
+    <title>DRAG</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <style>
+      :root {
+        --bg-primary: #1a1a1a;
+        --text-primary: #ffffff;
+        --accent: #4CAF50;
+        --error: #ff4444;
+        --card-bg: #2d2d2d;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+      }
+      .container {
+        max-width: 800px;
+        width: 100%;
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      h1 {
+        margin-bottom: 2rem;
+        color: var(--accent);
+      }
+      .status {
+        margin-bottom: 1rem;
+      }
+      .peer-id {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 1rem 0;
+        color: var(--accent);
+      }
+      .connect-form {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+      }
+      input, button {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+      input {
+        background-color: #333;
+        color: var(--text-primary);
+      }
+      button {
+        background-color: var(--accent);
+        color: white;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      .file-transfer {
+        margin-top: 2rem;
+      }
+      .file-list {
+        margin-top: 1rem;
+        list-style: none;
+      }
+      .file-item {
+        background-color: #333;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .progress-bar {
+        height: 5px;
+        background-color: #444;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+      }
+      .progress {
+        height: 100%;
+        background-color: var(--accent);
+        width: 0%;
+        transition: width 0.3s;
+      }
+      .error {
+        color: var(--error);
+        margin: 1rem 0;
+      }
+      #refresh-btn {
+        margin-top: 2rem;
+        padding: 0.5rem 1rem;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+      #refresh-btn:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>DRAG</h1>
+      <div id="host-section">
+        <div class="status">Your Peer ID:</div>
+        <div class="peer-id" id="peer-id">Connecting...</div>
+      </div>
+      
+      <div id="connect-section">
+        <div class="connect-form">
+          <input type="text" id="connect-id" placeholder="Enter 4-digit Peer ID" maxlength="4" pattern="\d{4}">
+          <button id="connect-btn">Connect</button>
+        </div>
+      </div>
+
+      <div class="file-transfer">
+        <input type="file" id="file-input" multiple style="display: none">
+        <button id="select-files">Select Files</button>
+        <div id="error" class="error"></div>
+        <ul class="file-list" id="file-list"></ul>
+      </div>
+
+      <button id="refresh-btn">Refresh</button>
+    </div>
+
+    <script>
+      let peer = null;
+      let conn = null;
+      let chunks = {};
+
+      function generatePeerId() {
+        return Math.floor(1000 + Math.random() * 9000).toString();
+      }
+
+      function initializePeer() {
+        const peerId = generatePeerId();
+        peer = new Peer(peerId);
+
+        peer.on('open', (id) => {
+          document.getElementById('peer-id').textContent = id;
+        });
+
+        peer.on('connection', (connection) => {
+          conn = connection;
+          setupConnection();
+        });
+
+        peer.on('error', (error) => {
+          document.getElementById('error').textContent = `Error: ${error.message}`;
+        });
+      }
+
+      function setupConnection() {
+        conn.on('data', (data) => {
+          if (data.type === 'file-header') {
+            chunks[data.fileId] = {
+              chunks: [],
+              name: data.fileName,
+              size: data.fileSize,
+              received: 0
+            };
+            addFileToList(data.fileId, data.fileName, 'receiving');
+          } else if (data.type === 'file-chunk') {
+            receiveChunk(data);
+          }
+        });
+      }
+
+      function connectToPeer() {
+        const connectId = document.getElementById('connect-id').value;
+        if (connectId.length !== 4) {
+          document.getElementById('error').textContent = 'Please enter a valid 4-digit Peer ID';
+          return;
+        }
+
+        conn = peer.connect(connectId);
+        conn.on('open', () => {
+          setupConnection();
+          document.getElementById('error').textContent = 'Connected successfully!';
+        });
+      }
+
+      function addFileToList(fileId, fileName, type) {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+        li.id = `file-${fileId}`;
+        li.innerHTML = `
+          <div>
+            <div>${fileName}</div>
+            <div class="progress-bar">
+              <div class="progress" id="progress-${fileId}"></div>
+            </div>
+          </div>
+        `;
+        document.getElementById('file-list').appendChild(li);
+      }
+
+      function updateProgress(fileId, progress) {
+        const progressBar = document.getElementById(`progress-${fileId}`);
+        if (progressBar) {
+          progressBar.style.width = `${progress}%`;
+        }
+      }
+
+      function sendFile(file) {
+        const fileId = Math.random().toString(36).substr(2, 9);
+        const chunkSize = 16384;
+        
+        conn.send({
+          type: 'file-header',
+          fileId: fileId,
+          fileName: file.name,
+          fileSize: file.size
+        });
+
+        addFileToList(fileId, file.name, 'sending');
+
+        let offset = 0;
+        function readChunk() {
+          const reader = new FileReader();
+          const blob = file.slice(offset, offset + chunkSize);
+          
+          reader.onload = (e) => {
+            conn.send({
+              type: 'file-chunk',
+              fileId: fileId,
+              chunk: e.target.result,
+              offset: offset
+            });
+
+            offset += blob.size;
+            const progress = (offset / file.size) * 100;
+            updateProgress(fileId, progress);
+
+            if (offset < file.size) {
+              readChunk();
+            }
+          };
+
+          reader.readAsArrayBuffer(blob);
+        }
+
+        readChunk();
+      }
+
+      function receiveChunk(data) {
+        const fileInfo = chunks[data.fileId];
+        if (!fileInfo) return;
+
+        fileInfo.chunks.push(data.chunk);
+        fileInfo.received += data.chunk.byteLength;
+
+        const progress = (fileInfo.received / fileInfo.size) * 100;
+        updateProgress(data.fileId, progress);
+
+        if (fileInfo.received === fileInfo.size) {
+          const blob = new Blob(fileInfo.chunks);
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileInfo.name;
+          a.click();
+
+          delete chunks[data.fileId];
+        }
+      }
+
+      document.getElementById('connect-btn').addEventListener('click', connectToPeer);
+      document.getElementById('select-files').addEventListener('click', () => {
+        document.getElementById('file-input').click();
+      });
+
+      document.getElementById('file-input').addEventListener('change', (e) => {
+        if (!conn) {
+          document.getElementById('error').textContent = 'Please connect to a peer first';
+          return;
+        }
+
+        Array.from(e.target.files).forEach(file => sendFile(file));
+        e.target.value = '';
+      });
+
+      document.getElementById('refresh-btn').addEventListener('click', () => {
+        location.reload();
+      });
+
+      initializePeer();
+    </script>
+  </body>
+</html>
