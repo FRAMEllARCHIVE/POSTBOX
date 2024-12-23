@@ -5,7 +5,7 @@ const FILES_TO_CACHE = [
   "/",
   "/1024x1024.png",
   "/512x512.png",
-  "/index.html"
+  "/index.html",
   OFFLINE_URL
 ];
 
