@@ -1,7 +1,6 @@
 const CACHE_NAME = "postbox-cache-v1";
 const OFFLINE_URL = "/offline.html";
 
-// Files to cache
 const FILES_TO_CACHE = [
   "/",
   "/1024x1024.png",
