@@ -6,9 +6,7 @@ const FILES_TO_CACHE = [
   "/",
   "/1024x1024.png",
   "/512x512.png",
-  "/index.html",
-  "/styles.css", // Add your CSS file
-  "/script.js",  // Add your JS file
+  "/index.html"
   OFFLINE_URL
 ];
 
