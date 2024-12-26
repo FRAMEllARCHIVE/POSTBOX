@@ -9,7 +9,8 @@
     <link rel="apple-touch-icon" href="icons/512x512.png">
     <title>POSTBOX</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <link rel="manifest" href="manifest.json">
     <style>
       :root {
         --bg-primary: #1a1a1a;
@@ -114,19 +115,24 @@
         color: var(--error);
         margin: 1rem 0;
       }
+      
       #refresh-btn {
-        margin-top: 2rem;
-        padding: 0.5rem 1rem;
-        background-color: var(--accent);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: opacity 0.2s;
-      }
-      #refresh-btn:hover {
-        opacity: 0.9;
-      }
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5rem; /* Adjust icon size */
+  transition: transform 0.2s ease, opacity 0.2s;
+}
+
+#refresh-btn:hover {
+  opacity: 0.9;
+  transform: rotate(15deg);
+}
     </style>
   </head>
   <body>
@@ -151,7 +157,9 @@
         <ul class="file-list" id="file-list"></ul>
       </div>
 
-      <button id="refresh-btn">Refresh</button>
+      <button id="refresh-btn" aria-label="Refresh">
+  <i class="fa fa-refresh" style="color: var(--accent);"></i>
+</button>
     </div>
 
     <script>
