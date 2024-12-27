@@ -179,7 +179,7 @@
         peer.on('connection', (connection) => {
           conn = connection;
           setupConnection();
-          showFileTransfer(); // Show file transfer UI
+          showFileTransfer();
         });
 
         peer.on('error', (error) => {
@@ -214,7 +214,7 @@
         conn.on('open', () => {
           setupConnection();
           document.getElementById('error').textContent = 'Connected successfully!';
-          showFileTransfer(); // Show file transfer UI
+          showFileTransfer();
         });
       }
 
@@ -244,7 +244,19 @@
         }
       }
 
-      function sendFile(file) {
+      function sendFiles(files) {
+        const fileQueue = Array.from(files);
+
+        function processNextFile() {
+          if (fileQueue.length === 0) return;
+          const file = fileQueue.shift();
+          sendFile(file, processNextFile);
+        }
+
+        processNextFile();
+      }
+
+      function sendFile(file, callback) {
         const fileId = Math.random().toString(36).substr(2, 9);
         const chunkSize = 16384;
 
@@ -276,6 +288,8 @@
 
             if (offset < file.size) {
               readChunk();
+            } else {
+              callback();
             }
           };
 
@@ -319,7 +333,7 @@
           return;
         }
 
-        Array.from(e.target.files).forEach(file => sendFile(file));
+        sendFiles(e.target.files);
         e.target.value = '';
       });
 
