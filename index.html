@@ -299,35 +299,33 @@
         readChunk();
       }
 
-      function receiveChunk(data) {
+function receiveChunk(data) {
   const fileInfo = chunks[data.fileId];
   if (!fileInfo) return;
 
-  // Append the received chunk to the chunks array
   fileInfo.chunks.push(data.chunk);
   fileInfo.received += data.chunk.byteLength;
 
   const progress = (fileInfo.received / fileInfo.size) * 100;
   updateProgress(data.fileId, progress);
 
-  // Create a Blob URL for the received chunks
   const blob = new Blob(fileInfo.chunks);
   const url = URL.createObjectURL(blob);
 
-  // Dynamically trigger the download
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileInfo.name;
-  a.click();
+  if (fileInfo.received === data.chunk.byteLength) {
 
-  // Optionally, release the Blob URL after use
-  URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileInfo.name;
+    a.click();
+  }
 
-  // Check if the file is completely received
   if (fileInfo.received === fileInfo.size) {
-    delete chunks[data.fileId]; // Cleanup when file is fully received
+    delete chunks[data.fileId];
+    URL.revokeObjectURL(url);
   }
 }
+
       document.getElementById('connect-btn').addEventListener('click', connectToPeer);
       document.getElementById('select-files').addEventListener('click', () => {
         document.getElementById('file-input').click();
