@@ -179,7 +179,7 @@
         peer.on('connection', (connection) => {
           conn = connection;
           setupConnection();
-          showFileTransfer();
+          showFileTransfer(); // Show file transfer UI
         });
 
         peer.on('error', (error) => {
@@ -214,7 +214,7 @@
         conn.on('open', () => {
           setupConnection();
           document.getElementById('error').textContent = 'Connected successfully!';
-          showFileTransfer();
+          showFileTransfer(); // Show file transfer UI
         });
       }
 
@@ -244,21 +244,9 @@
         }
       }
 
-      function sendFiles(files) {
-        const fileQueue = Array.from(files);
-
-        function processNextFile() {
-          if (fileQueue.length === 0) return;
-          const file = fileQueue.shift();
-          sendFile(file, processNextFile);
-        }
-
-        processNextFile();
-      }
-
-      function sendFile(file, callback) {
+      function sendFile(file) {
         const fileId = Math.random().toString(36).substr(2, 9);
-        const chunkSize = 65536;
+        const chunkSize = 16384;
 
         conn.send({
           type: 'file-header',
@@ -288,8 +276,6 @@
 
             if (offset < file.size) {
               readChunk();
-            } else {
-              callback();
             }
           };
 
@@ -299,32 +285,28 @@
         readChunk();
       }
 
-function receiveChunk(data) {
-  const fileInfo = chunks[data.fileId];
-  if (!fileInfo) return;
+      function receiveChunk(data) {
+        const fileInfo = chunks[data.fileId];
+        if (!fileInfo) return;
 
-  fileInfo.chunks.push(data.chunk);
-  fileInfo.received += data.chunk.byteLength;
+        fileInfo.chunks.push(data.chunk);
+        fileInfo.received += data.chunk.byteLength;
 
-  const progress = (fileInfo.received / fileInfo.size) * 100;
-  updateProgress(data.fileId, progress);
+        const progress = (fileInfo.received / fileInfo.size) * 100;
+        updateProgress(data.fileId, progress);
 
-  const blob = new Blob(fileInfo.chunks);
-  const url = URL.createObjectURL(blob);
+        if (fileInfo.received === fileInfo.size) {
+          const blob = new Blob(fileInfo.chunks);
+          const url = URL.createObjectURL(blob);
 
-  if (fileInfo.received === data.chunk.byteLength) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileInfo.name;
+          a.click();
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileInfo.name;
-    a.click();
-  }
-
-  if (fileInfo.received === fileInfo.size) {
-    delete chunks[data.fileId];
-    URL.revokeObjectURL(url);
-  }
-}
+          delete chunks[data.fileId];
+        }
+      }
 
       document.getElementById('connect-btn').addEventListener('click', connectToPeer);
       document.getElementById('select-files').addEventListener('click', () => {
@@ -337,7 +319,7 @@ function receiveChunk(data) {
           return;
         }
 
-        sendFiles(e.target.files);
+        Array.from(e.target.files).forEach(file => sendFile(file));
         e.target.value = '';
       });
 
@@ -347,19 +329,18 @@ function receiveChunk(data) {
 
       initializePeer();
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/POSTBOX/service-worker.js") // Specify the correct subdirectory
-      .then((registration) => {
-        console.log("Service Worker registered with scope:", registration.scope);
-      })
-      .catch((error) => {
-        console.error("Service Worker registration failed:", error);
-      });
-  });
-}
-
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/POSTBOX/service-worker.js")
+            .then((registration) => {
+              console.log("Service Worker registered with scope:", registration.scope);
+            })
+            .catch((error) => {
+              console.error("Service Worker registration failed:", error);
+            });
+        });
+      }
     </script>
   </body>
 </html>
