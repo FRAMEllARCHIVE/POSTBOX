@@ -258,7 +258,7 @@
 
       function sendFile(file, callback) {
         const fileId = Math.random().toString(36).substr(2, 9);
-        const chunkSize = 888888;
+        const chunkSize = 65536;
 
         conn.send({
           type: 'file-header',
