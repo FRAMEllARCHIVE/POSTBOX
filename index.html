@@ -179,7 +179,7 @@
         peer.on('connection', (connection) => {
           conn = connection;
           setupConnection();
-          showFileTransfer(); // Show file transfer UI
+          showFileTransfer();
         });
 
         peer.on('error', (error) => {
@@ -214,7 +214,7 @@
         conn.on('open', () => {
           setupConnection();
           document.getElementById('error').textContent = 'Connected successfully!';
-          showFileTransfer(); // Show file transfer UI
+          showFileTransfer();
         });
       }
 
