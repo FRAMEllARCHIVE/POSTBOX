@@ -1,19 +1,20 @@
 const CACHE_NAME = "postbox-cache-v1";
-const OFFLINE_URL = "/offline.html";
+const OFFLINE_URL = "/POSTBOX/offline.html";
 
 const FILES_TO_CACHE = [
-  "/",
-  "/1024x1024.png",
-  "/512x512.png",
-  "/index.html",
+  "/POSTBOX/",
+  "/POSTBOX/1024x1024.png",
+  "/POSTBOX/512x512.png",
+  "/POSTBOX/index.html",
   OFFLINE_URL
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("Caching app shell...");
       return cache.addAll(FILES_TO_CACHE);
+    }).catch((error) => {
+      console.error("Error during service worker installation:", error);
     })
   );
 });
@@ -24,11 +25,12 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log("Deleting old cache:", cache);
             return caches.delete(cache);
           }
         })
       );
+    }).catch((error) => {
+      console.error("Error during service worker activation:", error);
     })
   );
   return self.clients.claim();
@@ -42,6 +44,8 @@ self.addEventListener("fetch", (event) => {
           return caches.match(OFFLINE_URL);
         }
       });
+    }).catch((error) => {
+      console.error("Error during service worker fetch event:", error);
     })
   );
 });
