@@ -285,37 +285,28 @@
         readChunk();
       }
 
-function receiveChunk(data) {
-  const fileInfo = chunks[data.fileId];
-  if (!fileInfo) return;
+      function receiveChunk(data) {
+        const fileInfo = chunks[data.fileId];
+        if (!fileInfo) return;
 
-  fileInfo.chunks.push(data.chunk);
-  fileInfo.received += data.chunk.byteLength;
+        fileInfo.chunks.push(data.chunk);
+        fileInfo.received += data.chunk.byteLength;
 
-  const progress = (fileInfo.received / fileInfo.size) * 100;
-  updateProgress(data.fileId, progress);
+        const progress = (fileInfo.received / fileInfo.size) * 100;
+        updateProgress(data.fileId, progress);
 
-  if (fileInfo.received === fileInfo.size) {
-    const blob = new Blob(fileInfo.chunks);
-    const url = URL.createObjectURL(blob);
+        if (fileInfo.received === fileInfo.size) {
+          const blob = new Blob(fileInfo.chunks);
+          const url = URL.createObjectURL(blob);
 
-    const li = document.getElementById(`file-${data.fileId}`);
-    const downloadButton = document.createElement('button');
-    downloadButton.textContent = 'Download';
-    downloadButton.classList.add('download-btn');
-    downloadButton.onclick = () => {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileInfo.name;
-      a.click();
-    };
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileInfo.name;
+          a.click();
 
-    li.appendChild(downloadButton);
-
-    delete chunks[data.fileId];
-  }
-}
-
+          delete chunks[data.fileId];
+        }
+      }
 
       document.getElementById('connect-btn').addEventListener('click', connectToPeer);
       document.getElementById('select-files').addEventListener('click', () => {
